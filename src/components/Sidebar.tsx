@@ -1,7 +1,12 @@
-export default function Sidebar() {
+import React from "react";
+
+type SidebarProp = {
+  children: React.ReactNode
+}
+export default function Sidebar({children}: SidebarProp) {
   return (
     <div className="sidebar">
-      <div className="sidebar__top"></div>
+      {children}
     </div>
   );
 }

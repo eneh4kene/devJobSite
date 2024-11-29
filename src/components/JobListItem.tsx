@@ -1,19 +1,25 @@
+import { useActiveID } from "../lib/hooks";
+import { TJobItem } from "../lib/types";
 import BookmarkIcon from "./BookmarkIcon";
 
-export default function JobListItem() {
+type JobListItemProp = {
+  jobItem: TJobItem
+}
+export default function JobListItem({jobItem}: JobListItemProp) {
+  const activeId = useActiveID()
   return (
-    <li className="job-item">
-      <a className="job-item__link">
-        <div className="job-item__badge">9T</div>
+    <li className={`job-item ${jobItem.id === activeId ? "job-item--active" : ""}`}>
+      <a href={`#${jobItem.id}`} className="job-item__link">
+        <div className="job-item__badge">{jobItem.badgeLetters}</div>
 
         <div className="job-item__middle">
-          <h3 className="third-heading">Front End React Engineer</h3>
-          <p className="job-item__company">9th Tech</p>
+          <h3 className="third-heading">{jobItem.title}</h3>
+          <p className="job-item__company">{jobItem.company}</p>
         </div>
 
         <div className="job-item__right">
           <BookmarkIcon />
-          <time className="job-item__time">2d</time>
+          <time className="job-item__time">{jobItem.daysAgo}d</time>
         </div>
       </a>
     </li>
