@@ -18,3 +18,5 @@ export type TJobItemExpanded = TJobItem & {
     companyURL: string;
 
 }
+
+export type TSortBy = "relevant" | "recent"
