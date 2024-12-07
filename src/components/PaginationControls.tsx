@@ -1,16 +1,10 @@
 import { ArrowLeftIcon, ArrowRightIcon } from "@radix-ui/react-icons";
 import { JOBS_PER_PAGE } from "../constants";
+import { useJobItemsContext } from "../lib/hooks";
 
-type PaginationControlsProps = {
-  currentPage: number;
-  setCurrentPage: (currentPage: number)=> void;
-  totalNumOfJobs: number
-}
-export default function PaginationControls({
-  currentPage,
-  setCurrentPage,
-  totalNumOfJobs
-}: PaginationControlsProps) {
+export default function PaginationControls() {
+  const {currentPage, setCurrentPage, totalNumOfJobs}  = useJobItemsContext()
+
   const handlePreviousPage = () => {
     if (currentPage > 1) {
       setCurrentPage(currentPage - 1);

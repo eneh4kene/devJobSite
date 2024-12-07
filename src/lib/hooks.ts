@@ -4,6 +4,9 @@ import { TJobItem, TJobItemExpanded } from "./types";
 import { useQueries, useQuery } from "@tanstack/react-query";
 import { handleError } from "./utils";
 import { BookmarkIdsContext } from "../contexts/BookmarkIdsContextProvider";
+import { ActiveIdContext } from "../contexts/ActiveIdContextProvider";
+import { SearchTextContext } from "../contexts/searchTextContextProvider";
+import { JobItemsContext } from "../contexts/JobItemsContextProvider";
 
 
 type JobItemApiResponse = {
@@ -14,7 +17,7 @@ type JobItemApiResponse = {
 const fetchJobItemById = async (id:number): Promise<JobItemApiResponse> => {
     const response = await fetch(`${BASE_URL}/${id}`)
     //4xx or 5xx
-    if (!response) {
+    if (!response.ok) {
         const errorData = await response.json()
         throw new Error(errorData.description)
     }
@@ -82,7 +85,7 @@ export function useJobItemsBySearch(searchText: string) {
 
 // should take an array of ids, fetch and return all the corresponding jobitems of type TJobItem
 export function useJobItemsByIds(ids: number[]) {
-    const result = useQueries({
+    const results = useQueries({
         queries: ids.map(id => ({
             queryKey: ['job-item', id],
             queryFn: ()=> fetchJobItemById(id),
@@ -93,7 +96,15 @@ export function useJobItemsByIds(ids: number[]) {
             onError: handleError,
     }))})
 
-    console.log(result.isLoading)
+    const jobItems = results.map(result => result.data?.jobItem)
+    .filter(jobItem => jobItem !== undefined)
+
+    const isLoading = results.some(result => result.isLoading)
+
+    return {
+        jobItems,
+        isLoading
+    } as const
 }
 // --------------------------------------------------
 
@@ -117,45 +128,8 @@ export function useActiveID() {
     return activeID
 }
 
-// export function useExpandedJobItem(id: number | null) {
-//     const [isLoading, setIsLoading] = useState(false);
-//     const [jobItem, setJobItem] = useState<TJobItemExpanded | null>(null);
-//     const [errorMessage, setErrorMessage] = useState("");
 
-//     useEffect(() => {
-//         if (!id) return;
-
-//         const getCurentJobContent = async () => {
-//             setIsLoading(true);
-//             try {
-//                 const response = await fetch(`${BASE_URL}/${id}`);
-
-//                 if (!response.ok) {
-//                     throw new Error("Something went wrong");
-//                 }
-
-//                 const data = await response.json();
-//                 setJobItem(data.jobItem);
-//                 setErrorMessage(""); // Clear any previous error
-//             } catch (error: unknown) {
-//                 // Capture the error message
-//                 const message =
-//                     error instanceof Error ? error.message : "An unknown error occurred";
-//                 setErrorMessage(message);
-//             } finally {
-//                 // Ensure loading state is updated
-//                 setIsLoading(false);
-//             }
-//         };
-
-//         getCurentJobContent();
-//     }, [id]);
-
-//     return [jobItem, isLoading, errorMessage] as const;
-// }
-
-
-export function useDebounce(value, delay?: number) {
+export function useDebounce<T>(value: T, delay?: number): T {
     const [debounceValue, setDebounceValue] = useState(value);
 
     useEffect(()=>{
@@ -168,6 +142,38 @@ export function useDebounce(value, delay?: number) {
 }
 
 
+
+export function useLocalStorage<T>(key: string, initialValue: T): [T, React.Dispatch<React.SetStateAction<T>>] {
+  const [value, setValue] = useState(()=> JSON.parse(localStorage.getItem(key) || JSON.stringify(initialValue)))
+  
+  useEffect(()=>{
+    localStorage.setItem(key, JSON.stringify(value))
+  }, [value, key])
+  
+  return [value, setValue] as const;
+}
+
+
+export function useOnClickOutside(
+  refs: React.RefObject<HTMLElement>[],
+  handler: () => void
+) {
+  useEffect(() => {
+    const handleClick = (e: MouseEvent) => {
+      if (refs.every((ref) => !ref.current?.contains(e.target as Node))) {
+        handler();
+      }
+    };
+    
+    document.addEventListener("click", handleClick);
+    
+    return () => {
+      document.removeEventListener("click", handleClick);
+    };
+  }, [refs, handler]);
+}
+
+
 export const useBookmarkIdsContext = () => {
     const context = useContext(BookmarkIdsContext)
 
@@ -177,12 +183,29 @@ export const useBookmarkIdsContext = () => {
     return context
 }
 
-export function useLocalStorage<T>(key: string, initialValue: T): [T, React.Dispatch<React.SetStateAction<T>>] {
-    const [value, setValue] = useState(()=> JSON.parse(localStorage.getItem(key) || JSON.stringify(initialValue)))
+export const useActiveIdContext = () => {
+    const context = useContext(ActiveIdContext)
 
-    useEffect(()=>{
-        localStorage.setItem(key, JSON.stringify(value))
-    }, [value, key])
+    if (!context) {
+        throw new Error("useActiveIdContext must be used within 'ActiveIdContextProvider'")
+    }
+    return context
+}
 
-    return [value, setValue] as const;
+export const useSearchTextContext = () => {
+    const context = useContext(SearchTextContext)
+
+    if (!context) {
+        throw new Error("useSearchTextContext must be used within 'SearchTextContextProvider'")
+    }
+    return context
+}
+
+export const useJobItemsContext = () => {
+    const context = useContext(JobItemsContext)
+
+    if (!context) {
+        throw new Error("useJobItemsContext must be used within 'JobItemsContextProvider'")
+    }
+    return context
 }
